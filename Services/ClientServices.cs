@@ -5,19 +5,17 @@ namespace Tutorial8.Services;
 
 public class ClientServices : IClientServices
 {
-    
-    private readonly string _connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=apbd;Integrated Security=True;";
-    
-    
-   public async Task<List<ClientTripDTO>> GetClient(int id)
+    private readonly string _connectionString =
+        "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=apbd;Integrated Security=True;";
+
+
+    public async Task<List<ClientTripDTO>> GetClient(int id)
     {
-        
-        
         var result = new List<ClientTripDTO>();
         string command =
             "SELECT Client_Trip.*, Trip.*, Country.IdCountry as IdCountry, Country.Name as CountryName FROM Client \nJOIN Client_Trip ON Client.IdClient = Client_Trip.IdClient\nJOIN Trip ON Client_Trip.IdTrip = Trip.IdTrip\nJOIN Country_Trip ON Trip.IdTrip = Country_Trip.IdTrip\nJOIN Country ON Country_Trip.IdCountry = Country.IdCountry\nWHERE Client.IdClient = @IdClient";
-        
-        
+
+
         using (SqlConnection conn = new SqlConnection(_connectionString))
         using (SqlCommand cmd = new SqlCommand(command, conn))
         {
@@ -27,18 +25,18 @@ public class ClientServices : IClientServices
             {
                 while (await reader.ReadAsync())
                 {
-                    int? paymentDate = reader["PaymentDate"] == DBNull.Value 
-                        ? (int?)null 
+                    int? paymentDate = reader["PaymentDate"] == DBNull.Value
+                        ? (int?)null
                         : Convert.ToInt32(reader["PaymentDate"]);
-                    int idTrip = (int) reader["IdTrip"];
-                    string name = (string) reader["Name"];
-                    string desctription = (string) reader["Description"];
-                    DateTime dateFrom = (DateTime) reader["DateFrom"];
-                    DateTime dateTo = (DateTime) reader["DateTo"];
-                    int maxPeople = (int) reader["MaxPeople"];
-                    int countryId = (int) reader["IdCountry"];
-                    string countryName = (string) reader["CountryName"];
-                    
+                    int idTrip = (int)reader["IdTrip"];
+                    string name = (string)reader["Name"];
+                    string desctription = (string)reader["Description"];
+                    DateTime dateFrom = (DateTime)reader["DateFrom"];
+                    DateTime dateTo = (DateTime)reader["DateTo"];
+                    int maxPeople = (int)reader["MaxPeople"];
+                    int countryId = (int)reader["IdCountry"];
+                    string countryName = (string)reader["CountryName"];
+
                     var c = new ClientTripDTO()
                     {
                         trip = new TripDTO()
@@ -58,14 +56,11 @@ public class ClientServices : IClientServices
                                 }
                             }
                         },
-                        paymentDate = paymentDate != null ? 
-                            DateTime.ParseExact(paymentDate.ToString(), "yyyyMMdd", null):
-                            null
-                        
-                       
-                    
+                        paymentDate = paymentDate != null
+                            ? DateTime.ParseExact(paymentDate.ToString(), "yyyyMMdd", null)
+                            : null
                     };
-                    
+
                     result.Add(c);
                 }
             }
@@ -73,7 +68,7 @@ public class ClientServices : IClientServices
 
         return result;
     }
-    
+
     public async Task<int?> AddClient(NewClientDTO client)
     {
         string insertQuery =
@@ -90,11 +85,12 @@ public class ClientServices : IClientServices
 
             await conn.OpenAsync();
             var result = await cmd.ExecuteScalarAsync();
-            
+
             if (result != DBNull.Value)
             {
                 return Convert.ToInt32(result);
             }
+
             return 0;
         }
     }
@@ -124,6 +120,13 @@ public class ClientServices : IClientServices
             if (current >= maxPeople) return false;
 
 
+            var checkExists =
+                new SqlCommand("SELECT COUNT(*) FROM Client_Trip WHERE IdClient = @idClient AND IdTrip = @idTrip",
+                    conn);
+            checkExists.Parameters.AddWithValue("@idClient", clientId);
+            checkExists.Parameters.AddWithValue("@idTrip", tripId);
+            if ((int)await checkExists.ExecuteScalarAsync() > 0) return false;
+
             var register = new SqlCommand(
                 "INSERT INTO Client_Trip (IdClient, IdTrip, RegisteredAt) VALUES (@clientId, @tripId, @now)", conn);
             register.Parameters.AddWithValue("@clientId", clientId);
@@ -133,10 +136,8 @@ public class ClientServices : IClientServices
             await register.ExecuteNonQueryAsync();
             return true;
         }
-
-        
     }
-    
+
     public async Task<bool> UnregisterClientFromTrip(int clientId, int tripId)
     {
         using (var conn = new SqlConnection(_connectionString))
@@ -158,6 +159,4 @@ public class ClientServices : IClientServices
             return true;
         }
     }
-    
-    
 }

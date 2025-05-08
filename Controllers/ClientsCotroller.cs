@@ -54,7 +54,7 @@ namespace Tutorial8.Controllers
         {
             var success = await _clientServices.RegisterClientToTrip(id, tripId);
             if (!success)
-                return BadRequest("Could not register client. Possible reasons: non-existent client/trip or trip full.");
+                return BadRequest("Could not register client. Possible reasons: non-existent client/trip or trip full or this client has been already registerd to this trip.");
 
             return Ok("Client registered to trip successfully.");
         }
