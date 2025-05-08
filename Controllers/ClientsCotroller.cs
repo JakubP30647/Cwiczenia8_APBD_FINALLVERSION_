@@ -39,7 +39,7 @@ namespace Tutorial8.Controllers
         public async Task<IActionResult> AddClient([FromBody] NewClientDTO client)
         {
             if (string.IsNullOrWhiteSpace(client.FirstName) || string.IsNullOrWhiteSpace(client.LastName) ||
-                string.IsNullOrWhiteSpace(client.Email) || string.IsNullOrWhiteSpace(client.Pesel))
+                string.IsNullOrWhiteSpace(client.Email) || string.IsNullOrWhiteSpace(client.Pesel) || string.IsNullOrWhiteSpace(client.Telephone))
             {
                 return BadRequest("Missing required fields.");
             }

@@ -11,7 +11,7 @@ public class TripDTO
 
     public int maxPeople { get; set; }
     
-    public CountryDTO country { get; set; }
+    public List<CountryDTO> Countries{ get; set; }
 }
 
 public class CountryDTO
@@ -24,6 +24,6 @@ public class CountryDTO
 public class ClientTripDTO
 {
     public TripDTO trip { get; set; }
-    public DateTime paymentDate { get; set; }
+    public DateTime? paymentDate { get; set; }
     
 }

@@ -5,8 +5,9 @@ namespace Tutorial8.Services;
 
 public class ClientServices : IClientServices
 {
+    
     private readonly string _connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=apbd;Integrated Security=True;";
-
+    
     
    public async Task<List<ClientTripDTO>> GetClient(int id)
     {
@@ -26,7 +27,9 @@ public class ClientServices : IClientServices
             {
                 while (await reader.ReadAsync())
                 {
-                    int paymentDate = (int) reader["PaymentDate"];
+                    int? paymentDate = reader["PaymentDate"] == DBNull.Value 
+                        ? (int?)null 
+                        : Convert.ToInt32(reader["PaymentDate"]);
                     int idTrip = (int) reader["IdTrip"];
                     string name = (string) reader["Name"];
                     string desctription = (string) reader["Description"];
@@ -46,12 +49,18 @@ public class ClientServices : IClientServices
                             DateFrom = dateFrom,
                             DateTo = dateTo,
                             maxPeople = maxPeople,
-                            country = new CountryDTO(){
-                                countryId = countryId,
-                                countryName = countryName
+                            Countries = new List<CountryDTO>
+                            {
+                                new CountryDTO()
+                                {
+                                    countryId = countryId,
+                                    countryName = countryName
+                                }
                             }
                         },
-                        paymentDate = DateTime.ParseExact(paymentDate.ToString(), "yyyyMMdd", null)
+                        paymentDate = paymentDate != null ? 
+                            DateTime.ParseExact(paymentDate.ToString(), "yyyyMMdd", null):
+                            null
                         
                        
                     
@@ -67,7 +76,8 @@ public class ClientServices : IClientServices
     
     public async Task<int?> AddClient(NewClientDTO client)
     {
-        string insertQuery = "INSERT INTO Client (FirstName, LastName, Email, Telephone, Pesel) OUTPUT INSERTED.IdClient VALUES (@FirstName, @LastName, @Email, @Telephone, @Pesel)";
+        string insertQuery =
+            "INSERT INTO CLIENT (FirstName,LastName,Email,Telephone,Pesel) VALUES (@FirstName,@LastName,@Email,@Telephone,@Pesel); SELECT SCOPE_IDENTITY()";
 
         using (var conn = new SqlConnection(_connectionString))
         using (var cmd = new SqlCommand(insertQuery, conn))
@@ -80,7 +90,12 @@ public class ClientServices : IClientServices
 
             await conn.OpenAsync();
             var result = await cmd.ExecuteScalarAsync();
-            return (int?)result;
+            
+            if (result != DBNull.Value)
+            {
+                return Convert.ToInt32(result);
+            }
+            return 0;
         }
     }
 
@@ -143,4 +158,6 @@ public class ClientServices : IClientServices
             return true;
         }
     }
+    
+    
 }

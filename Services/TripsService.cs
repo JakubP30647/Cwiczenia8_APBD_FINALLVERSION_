@@ -5,18 +5,19 @@ namespace Tutorial8.Services;
 
 public class TripsService : ITripsService
 {
-    private readonly string _connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=apbd;Integrated Security=True;";
-    
+    private readonly string _connectionString =
+        "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=apbd;Integrated Security=True;";
+
     public async Task<List<TripDTO>> GetTrips()
     {
         var trips = new List<TripDTO>();
 
-        string command = 
-                "SELECT Trip.*, Country.IdCountry, Country.Name AS CountryName FROM Trip " +
-                "RIGHT JOIN Country_Trip ON Trip.IdTrip = Country_Trip.IdTrip " + 
-                "JOIN Country ON Country_Trip.IdCountry = Country.IdCountry ";
-        
-        
+        string command =
+            "SELECT Trip.*, Country.IdCountry, Country.Name AS CountryName FROM Trip " +
+            "RIGHT JOIN Country_Trip ON Trip.IdTrip = Country_Trip.IdTrip " +
+            "JOIN Country ON Country_Trip.IdCountry = Country.IdCountry ";
+
+
         using (SqlConnection conn = new SqlConnection(_connectionString))
         using (SqlCommand cmd = new SqlCommand(command, conn))
         {
@@ -26,88 +27,63 @@ public class TripsService : ITripsService
             {
                 while (await reader.ReadAsync())
                 {
-                    
-                    int idTrip = (int) reader["IdTrip"];
-                    string name = (string) reader["Name"];
-                    string desctription = (string) reader["Description"];
-                    DateTime dateFrom = (DateTime) reader["DateFrom"];
-                    DateTime dateTo = (DateTime) reader["DateTo"];
-                    int maxPeople = (int) reader["MaxPeople"];
-                    int countryId = (int) reader["IdCountry"];
-                    string countryName = (string) reader["CountryName"];
-                    
-                    var s = new TripDTO()
+                    int idTrip = (int)reader["IdTrip"];
+                    string name = (string)reader["Name"];
+                    string desctription = (string)reader["Description"];
+                    DateTime dateFrom = (DateTime)reader["DateFrom"];
+                    DateTime dateTo = (DateTime)reader["DateTo"];
+                    int maxPeople = (int)reader["MaxPeople"];
+                    int countryId = (int)reader["IdCountry"];
+                    string countryName = (string)reader["CountryName"];
+
+                    if (check(trips, idTrip))
                     {
-                        Id = idTrip,
-                        Name = name,
-                        Desctription = desctription,
-                        DateFrom = dateFrom,
-                        DateTo = dateTo,
-                        maxPeople = maxPeople,
-                        country = new CountryDTO(){
+                        trips.Find(trip => trip.Id == idTrip).Countries.Add(new CountryDTO
+                        {
                             countryId = countryId,
-                            countryName = countryName
-                        }
-                    
-                    };
-                    trips.Add(s);
-                    
+                            countryName = countryName,
+                        });
+                    }
+                    else
+                    {
+                        var s = new TripDTO()
+                        {
+                            Id = idTrip,
+                            Name = name,
+                            Desctription = desctription,
+                            DateFrom = dateFrom,
+                            DateTo = dateTo,
+                            maxPeople = maxPeople,
+                            Countries = new List<CountryDTO>
+                            {
+                                new CountryDTO()
+                                {
+                                    countryId = countryId,
+                                    countryName = countryName
+                                }
+                            }
+                        };
+                        trips.Add(s);
+                    }
                 }
             }
         }
-        
+
 
         return trips;
     }
-    
 
-    public async Task<TripDTO> GetTripById(int id)
+    
+    private bool check(List<TripDTO> trips, int idTrip)
     {
-        var trips = new List<TripDTO>();
-        string command = 
-            "SELECT Trip.*, Country.IdCountry, Country.Name AS CountryName FROM Trip " +
-            "RIGHT JOIN Country_Trip ON Trip.IdTrip = Country_Trip.IdTrip " + 
-            "JOIN Country ON Country_Trip.IdCountry = Country.IdCountry " + "WHERE Trip.IdTrip = @IdTrip";
-        
-        var result = new TripDTO();
-        
-        using (SqlConnection conn = new SqlConnection(_connectionString))
-        using (SqlCommand cmd = new SqlCommand(command, conn))
+        foreach (var trip in trips)
         {
-            await conn.OpenAsync();
-            cmd.Parameters.AddWithValue("@IdTrip", id);
-            using (var reader = await cmd.ExecuteReaderAsync())
+            if (trip.Id == idTrip)
             {
-                while (await reader.ReadAsync())
-                {
-                    
-                    int idTrip = (int) reader["IdTrip"];
-                    string name = (string) reader["Name"];
-                    string desctription = (string) reader["Description"];
-                    DateTime dateFrom = (DateTime) reader["DateFrom"];
-                    DateTime dateTo = (DateTime) reader["DateTo"];
-                    int maxPeople = (int) reader["MaxPeople"];
-                    
-                   result = new TripDTO() {
-                        Id = idTrip,
-                        Name = name,
-                        Desctription = desctription,
-                        DateFrom = dateFrom,
-                        DateTo = dateTo,
-                        maxPeople = maxPeople
-                       
-                    };
-                    
-                }
+                return true;
             }
         }
-        
 
-        return result;
+        return false;
     }
-
-    
-    
-    
-
 }
